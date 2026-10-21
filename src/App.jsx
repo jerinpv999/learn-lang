@@ -1,17 +1,11 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import Stage from './Stage.jsx';
-import { LANGS, LETTERS, SCENES, enFor } from './data.js';
+import { LANGS, LETTERS } from './data.js';
 import { WORDS } from './words.js';
-import { COURSE } from './course.js';
 import Numbers from './Numbers.jsx';
 import Daily, { loadProgress } from './Daily.jsx';
-
-const ALL = [
-  ...SCENES.map((s) => ({ ...s, group: 'Everyday situations', label: s.title })),
-  ...COURSE.map((c) => ({ ...c, group: '30-day course', label: `Day ${c.day} · ${c.title}` })),
-];
-
-const ACCENTS = { hi: '#D9782D', fr: '#2F5FD0', de: '#C23B2E' };
+import Course, { loadCourse } from './Course.jsx';
+import Display, { splitWords, bareWord } from './Display.jsx';
+import { ALL_LESSON_IDS } from './curriculum.js';
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -33,12 +27,32 @@ function useSpeech() {
     const base = code.slice(0, 2);
     return voices.find((v) => v.lang === code) || voices.find((v) => v.lang?.replace('_', '-').startsWith(base));
   }, [voices]);
-  const speak = useCallback((text, code, { rate = 1, pitch = 1, onEnd } = {}) => {
+  // onWord(i) reports which word is being spoken: from the browser's word events when it sends them,
+  // otherwise from an estimate based on elapsed time.
+  const speak = useCallback((text, code, { rate = 1, pitch = 1, onEnd, onWord } = {}) => {
     if (!supported) { onEnd?.(); return; }
     const u = new SpeechSynthesisUtterance(text);
     u.lang = code; u.rate = rate; u.pitch = pitch;
     const v = voiceFor(code); if (v) u.voice = v;
-    u.onend = () => onEnd?.(); u.onerror = () => onEnd?.();
+    let timer = null;
+    if (onWord) {
+      const starts = []; let p = 0;
+      for (const w of text.split(/\s+/).filter(Boolean)) { const i = text.indexOf(w, p); starts.push(i); p = i + w.length; }
+      const idxAt = (c) => { let k = 0; for (let j = 0; j < starts.length; j++) if (starts[j] <= c) k = j; return k; };
+      let real = false;
+      u.onboundary = (e) => { if (e.name && e.name !== 'word') return; real = true; onWord(idxAt(e.charIndex)); };
+      u.onstart = () => {
+        onWord(0);
+        const t0 = performance.now();
+        const est = Math.max(500, (text.length * (code.startsWith('hi') ? 80 : 68)) / rate);
+        timer = setInterval(() => {
+          if (real) { clearInterval(timer); return; }
+          onWord(idxAt(Math.floor(Math.min(0.999, (performance.now() - t0) / est) * text.length)));
+        }, 90);
+      };
+    }
+    const done = () => { clearInterval(timer); onEnd?.(); };
+    u.onend = done; u.onerror = done;
     window.speechSynthesis.speak(u);
   }, [supported, voiceFor]);
   const stop = useCallback(() => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
@@ -136,7 +150,7 @@ function Words({ lang, say, onPick, current }) {
       <ul className="words">
         {WORDS[cat].items.map((w) => (
           <li key={w.en}>
-            <button className={'word' + (current?.en === w.en ? ' on' : '')} onClick={() => { onPick({ t: w[lang].t, en: w.en }); say(w[lang].t); }}>
+            <button className={'word' + (current === w.en ? ' on' : '')} onClick={() => onPick(w)}>
               <span className="en">{w.en}</span>
               <span className={'tgt' + (lang === 'hi' ? ' deva' : '')}>{w[lang].t}</span>
               <span className="pr">{w[lang].r}</span>
@@ -149,119 +163,88 @@ function Words({ lang, say, onPick, current }) {
   );
 }
 
-/* ---------- Conversations ---------- */
-function Conversation({ lang, scene, setScene, active, setActive, say, stop, showEn, setShowEn, showRom, setShowRom, heard, markHeard, rate }) {
-  const [playing, setPlaying] = useState(false);
-  const playRef = useRef(false);
-  const sc = ALL[scene];
-  const heardHere = sc.lines.filter((_, j) => heard[`${lang}:${sc.id}:${j}`]).length;
-
-  const playLine = (i, chain) => {
-    const l = sc.lines[i];
-    setActive(i);
-    markHeard(`${lang}:${sc.id}:${i}`);
-    say(l[lang], { pitch: l.who === 'a' ? 1.15 : 0.85, rate, onEnd: () => {
-      if (!chain || !playRef.current) return;
-      if (i + 1 < sc.lines.length) setTimeout(() => playRef.current && playLine(i + 1, true), 450);
-      else { playRef.current = false; setPlaying(false); }
-    } });
-  };
-  const playAll = () => {
-    if (playing) { playRef.current = false; setPlaying(false); stop(); return; }
-    stop(); playRef.current = true; setPlaying(true); playLine(0, true);
-  };
-  useEffect(() => () => { playRef.current = false; }, []);
-  useEffect(() => { playRef.current = false; setPlaying(false); stop(); }, [scene, lang, stop]);
-
-  return (
-    <div className="stack">
-      <div className="row wrap pick">
-        <label className="label" htmlFor="convo-pick">Conversation</label>
-        <select id="convo-pick" value={scene} onChange={(e) => { setScene(Number(e.target.value)); setActive(0); }}>
-          {['Everyday situations', '30-day course'].map((g) => (
-            <optgroup key={g} label={g}>
-              {ALL.map((s, i) => s.group === g && <option key={s.id} value={i}>{s.label}</option>)}
-            </optgroup>
-          ))}
-        </select>
-        <button className="ghost" disabled={scene === 0} onClick={() => { setScene(scene - 1); setActive(0); }} aria-label="Previous conversation">‹</button>
-        <button className="ghost" disabled={scene === ALL.length - 1} onClick={() => { setScene(scene + 1); setActive(0); }} aria-label="Next conversation">›</button>
-        <span className="meter" aria-label={`${heardHere} of ${sc.lines.length} lines heard`}>
-          {sc.lines.map((_, j) => <i key={j} className={heard[`${lang}:${sc.id}:${j}`] ? 'f' : ''} />)}
-        </span>
-      </div>
-
-      <div className="row between wrap">
-        <div className="roles"><span className="dot a" />{sc.roles[0]}<span className="dot b" />{sc.roles[1]}</div>
-        <div className="row wrap">
-          <label className="toggle"><input id="show-en" type="checkbox" checked={showEn} onChange={(e) => setShowEn(e.target.checked)} /> English</label>
-          {lang === 'hi' && <label className="toggle"><input id="show-rom" type="checkbox" checked={showRom} onChange={(e) => setShowRom(e.target.checked)} /> Romanised</label>}
-          <button className="primary" onClick={playAll}>{playing ? 'Stop' : 'Play conversation'}</button>
-        </div>
-      </div>
-
-      <ol className="dialog">
-        {sc.lines.map((l, i) => (
-          <li key={i} className={`line ${l.who}` + (active === i ? ' on' : '')}>
-            <button onClick={() => { playRef.current = false; setPlaying(false); stop(); playLine(i, false); }} aria-label={`Play line ${i + 1}`}>
-              <span className="who">{sc.roles[l.who === 'a' ? 0 : 1]}</span>
-              <span className={'say' + (lang === 'hi' ? ' deva' : '')}>{l[lang]}</span>
-              {lang === 'hi' && showRom && <span className="rom">{l.hiR}</span>}
-              {showEn && <span className="tr">{enFor(l, lang)}</span>}
-              <span className="spk"><SpeakIcon /></span>
-            </button>
-          </li>
-        ))}
-      </ol>
-      <p className="hint">Tap any line to hear it. Drag the scene to look around.{lang === 'hi' && ' Hindi lines use masculine forms for “you” (करता हूँ); a woman would say करती हूँ.'}</p>
-    </div>
-  );
-}
-
 /* ---------- App ---------- */
 export default function App() {
   const [lang, setLang] = useState(() => store.get('ll.lang', 'hi'));
-  const [tab, setTab] = useState(() => store.get('ll.tab', 'daily'));
-  const [scene, setScene] = useState(() => store.get('ll.scene', 0));
-  const [numShow, setNumShow] = useState({ t: '2,34,56,789', en: '' });
-  const [dailyShow, setDailyShow] = useState(null);
-  const [active, setActive] = useState(0);
+  const [tab, setTab] = useState(() => store.get('ll.tab', 'course'));
+  const [focus, setFocusRaw] = useState(null);
+  const [wordIdx, setWordIdx] = useState(-1);
+  const [reveal, setReveal] = useState(() => store.get('ll.reveal', false));
   const [letter, setLetter] = useState(null);
   const [word, setWord] = useState(null);
-  const [showEn, setShowEn] = useState(true);
   const [showRom, setShowRom] = useState(true);
   const [slow, setSlow] = useState(false);
-  const [heard, setHeard] = useState(() => store.get('ll.heard', {}));
   const { speak, stop, hasVoice, voicesLoaded, supported } = useSpeech();
+  const tok = useRef(0);
 
   useEffect(() => store.set('ll.lang', lang), [lang]);
   useEffect(() => store.set('ll.tab', tab), [tab]);
-  useEffect(() => store.set('ll.scene', scene), [scene]);
+  useEffect(() => store.set('ll.reveal', reveal), [reveal]);
   useEffect(() => { document.documentElement.dataset.lang = lang; }, [lang]);
   useEffect(() => { setLetter(null); setWord(null); }, [lang]);
 
   const code = LANGS[lang].speech;
   const rate = slow ? 0.65 : 0.95;
+
+  const setFocus = useCallback((f) => { tok.current++; setFocusRaw(f); setWordIdx(-1); }, []);
+  const halt = useCallback(() => { tok.current++; stop(); }, [stop]);
+
+  /** Show something in the big panel and speak it, lighting up each word. Resolves when speech ends. */
+  const sayFocus = useCallback((f, opts = {}) => new Promise((res) => {
+    stop();
+    const my = ++tok.current;
+    setFocusRaw(f); setWordIdx(-1);
+    const n = splitWords(f.t).length;
+    speak(f.say || f.t, code, {
+      rate, ...opts,
+      onWord: f.kind === 'number' ? undefined : (i) => { if (tok.current === my) setWordIdx(i); },
+      onEnd: () => { if (tok.current === my) setWordIdx(n); res(); },
+    });
+  }), [speak, stop, code, rate]);
+
+  /** Speak a sentence one word at a time with a short pause between words. */
+  const wordByWord = useCallback(async (f) => {
+    stop();
+    const my = ++tok.current;
+    setFocusRaw(f); setWordIdx(-1);
+    const ws = splitWords(f.t);
+    for (let i = 0; i < ws.length; i++) {
+      if (tok.current !== my) return;
+      setWordIdx(i);
+      await new Promise((r) => speak(bareWord(ws[i]), code, { rate: rate * 0.85, onEnd: r }));
+      await new Promise((r) => setTimeout(r, 380));
+    }
+    if (tok.current === my) setWordIdx(ws.length);
+  }, [speak, stop, code, rate]);
+
+  const sayWord = useCallback((w) => { halt(); speak(w, code, { rate: rate * 0.85 }); }, [halt, speak, code, rate]);
   const say = useCallback((text, opts = {}) => { stop(); speak(text, code, { rate, ...opts }); }, [speak, stop, code, rate]);
-  const markHeard = useCallback((k) => setHeard((h) => { if (h[k]) return h; const n = { ...h, [k]: 1 }; store.set('ll.heard', n); return n; }), []);
 
-  const firstLetter = LETTERS[lang][0].items[0];
-  const curLetter = letter || { char: firstLetter[0], name: firstLetter[1], tip: firstLetter[2] };
-  const firstWord = WORDS[0].items[0];
-  const curWord = word || { t: firstWord[lang].t, en: firstWord.en };
-  const sc = ALL[scene] || ALL[0];
+  // Daily hour drives the panel itself
+  const onDailyShow = useCallback((s) => {
+    setFocusRaw({
+      kind: s.mode === 'convo' ? 'line' : s.mode === 'number' ? 'number' : 'word',
+      t: s.t, r: s.r, en: s.mode === 'number' ? `${s.en} in digits` : s.en, words: s.words, who: s.who, role: s.role,
+      label: s.mode === 'convo' ? `${s.title} · line ${s.n} of ${s.total}` : s.mode === 'number' ? 'Number' : 'Word',
+    });
+    setWordIdx(-1);
+  }, []);
+  const onDailyWord = useCallback((i) => setWordIdx(i), []);
+  const onNumShow = useCallback((v) => setFocus({ kind: 'number', t: v.t, words: v.words, r: v.r, say: v.words, label: 'Big numbers' }), [setFocus]);
+
+  // default panel content for the simple tabs
+  useEffect(() => {
+    if (tab === 'letters') {
+      const it = LETTERS[lang][0].items[0];
+      setFocus({ kind: 'letter', t: it[0], en: it[1], tip: it[2], label: 'Letter · sounds like' });
+    } else if (tab === 'words') {
+      const w = WORDS[0].items[0];
+      setFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: w.en, label: WORDS[0].cat });
+    }
+  }, [tab, lang, setFocus]);
+
   const daysDone = Object.values(loadProgress(lang)).filter((p) => p.done).length;
-  const onNumShow = useCallback((v) => setNumShow(v), []);
-  const onDailyShow = useCallback((v) => setDailyShow(v), []);
-
-  let stage;
-  if (tab === 'daily' && dailyShow) {
-    stage = dailyShow.mode === 'convo'
-      ? { mode: 'convo', scene: { id: dailyShow.setting }, line: { who: dailyShow.who, [lang]: dailyShow.t, hiR: dailyShow.r } }
-      : { mode: 'words', word: { t: dailyShow.t, en: dailyShow.mode === 'number' ? '' : dailyShow.en } };
-  } else if (tab === 'numbers') stage = { mode: 'words', word: numShow };
-  else if (tab === 'convo') stage = { mode: 'convo', scene: sc, line: sc.lines[active] };
-  else stage = { mode: tab, letter: curLetter, word: curWord };
+  const lessonsDone = Object.values(loadCourse(lang)).filter((p) => p.done).length;
 
   return (
     <div className="app">
@@ -270,12 +253,12 @@ export default function App() {
           <span className="mark" aria-hidden="true">{LANGS[lang].greet.slice(0, 1)}</span>
           <div>
             <h1>Phrasewalk</h1>
-            <p>Hindi, French and German from English · one hour a day for 30 days</p>
+            <p>Hindi, French and German from English · beginner to advanced</p>
           </div>
         </div>
         <div className="langs" role="radiogroup" aria-label="Language to learn">
           {Object.entries(LANGS).map(([k, v]) => (
-            <button key={k} role="radio" aria-checked={lang === k} className={'lang ' + k + (lang === k ? ' on' : '')} onClick={() => { stop(); setLang(k); }}>
+            <button key={k} role="radio" aria-checked={lang === k} className={'lang ' + k + (lang === k ? ' on' : '')} onClick={() => { halt(); setLang(k); }}>
               <span className={k === 'hi' ? 'deva' : ''}>{v.native}</span>
               <small>{v.name}</small>
             </button>
@@ -283,13 +266,13 @@ export default function App() {
         </div>
       </header>
 
-      <nav className="tabs" role="tablist" aria-label="Lesson type">
-        {[['daily', 'Daily hour'], ['letters', 'Letters'], ['words', 'Words'], ['numbers', 'Big numbers'], ['convo', 'Conversations']].map(([k, label]) => (
-          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => { stop(); setTab(k); }}>{label}</button>
+      <nav className="tabs" role="tablist" aria-label="Section">
+        {[['course', 'Course'], ['daily', 'Daily hour'], ['letters', 'Letters'], ['words', 'Words'], ['numbers', 'Big numbers']].map(([k, label]) => (
+          <button key={k} role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => { halt(); setTab(k); }}>{label}</button>
         ))}
         <span className="spacer" />
         <label className="toggle"><input id="slow" type="checkbox" checked={slow} onChange={(e) => setSlow(e.target.checked)} /> Slow speech</label>
-        <span className="progress">{daysDone}/30 days done</span>
+        <span className="progress">{lessonsDone}/{ALL_LESSON_IDS.length} lessons · {daysDone}/30 days</span>
       </nav>
 
       {(!supported || (voicesLoaded && !hasVoice(code))) && (
@@ -302,56 +285,16 @@ export default function App() {
 
       <main className="grid">
         <div className="stage-wrap">
-          <div className="stage">
-            <Stage lang={lang} accent={ACCENTS[lang]} showSub={showRom} {...stage} />
-          </div>
-          <div className="caption">
-            {tab === 'letters' && (
-              <>
-                <span className="label">Sounds like</span>
-                <p><strong>{curLetter.name}</strong> · {curLetter.tip}</p>
-                <button className="chip" onClick={() => say(curLetter.char)}><SpeakIcon /> Hear it</button>
-              </>
-            )}
-            {tab === 'words' && (
-              <>
-                <span className="label">{curWord.en}</span>
-                <p className={lang === 'hi' ? 'deva' : ''}><strong>{curWord.t}</strong></p>
-                <button className="chip" onClick={() => say(curWord.t)}><SpeakIcon /> Hear it</button>
-              </>
-            )}
-            {tab === 'numbers' && (
-              <>
-                <span className="label">Indian, French and German grouping differ</span>
-                <p><strong>{numShow.t}</strong></p>
-              </>
-            )}
-            {tab === 'daily' && dailyShow && (
-              <>
-                <span className="label">{dailyShow.mode === 'convo' ? `${dailyShow.title} · ${dailyShow.role}` : dailyShow.mode === 'number' ? 'Number' : 'Word'}</span>
-                <p>{dailyShow.mode === 'number' ? `${dailyShow.en} in English digits` : dailyShow.en}</p>
-              </>
-            )}
-            {tab === 'convo' && (
-              <>
-                <span className="label">{sc.label} · line {active + 1} of {sc.lines.length}</span>
-                <p>{enFor(sc.lines[active], lang)}</p>
-              </>
-            )}
-          </div>
+          <Display focus={focus} wordIdx={wordIdx} lang={lang} reveal={reveal} setReveal={setReveal} showRom={showRom}
+            onSay={() => (focus ? sayFocus(focus) : null)} onWordByWord={() => focus && wordByWord(focus)} onWord={sayWord} />
         </div>
 
         <div className="panel">
-          {tab === 'letters' && <Letters lang={lang} current={letter} onPick={(l) => { setLetter(l); say(l.char); }} />}
-          {tab === 'words' && <Words lang={lang} say={say} current={word} onPick={setWord} />}
+          {tab === 'course' && <Course lang={lang} sayFocus={sayFocus} wordByWord={wordByWord} setFocus={setFocus} stop={halt} showRom={showRom} setShowRom={setShowRom} />}
+          {tab === 'letters' && <Letters lang={lang} current={letter} onPick={(l) => { setLetter(l); sayFocus({ kind: 'letter', t: l.char, en: l.name, tip: l.tip, label: 'Letter · sounds like' }); }} />}
+          {tab === 'words' && <Words lang={lang} say={say} current={word} onPick={(w) => { setWord(w.en); sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: w.en, label: 'Word' }); }} />}
           {tab === 'numbers' && <Numbers lang={lang} say={(t, o = {}) => say(t, o)} onShow={onNumShow} />}
-          {tab === 'daily' && <Daily key={lang} lang={lang} speak={speak} stop={stop} onShow={onDailyShow} showRom={showRom} setShowRom={setShowRom} />}
-          {tab === 'convo' && (
-            <Conversation lang={lang} scene={scene} setScene={setScene} active={active} setActive={setActive}
-              say={(t, o) => speak(t, code, { rate, ...o })} stop={stop}
-              showEn={showEn} setShowEn={setShowEn} showRom={showRom} setShowRom={setShowRom}
-              heard={heard} markHeard={markHeard} rate={rate} />
-          )}
+          {tab === 'daily' && <Daily key={lang} lang={lang} speak={speak} stop={stop} onShow={onDailyShow} onWord={onDailyWord} showRom={showRom} setShowRom={setShowRom} />}
         </div>
       </main>
     </div>

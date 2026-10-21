@@ -60,8 +60,8 @@ export default function Numbers({ lang, say, onShow }) {
   const deva = lang === 'hi' ? ' deva' : '';
 
   useEffect(() => {
-    if (valid) onShow({ t: formatNum(n, lang), en: '' });
-  }, [n, lang, valid, onShow]);
+    if (rd) onShow({ t: formatNum(n, lang), words: rd.text, r: rd.r });
+  }, [rd, n, lang, onShow]);
 
   const rand = () => Math.random;
   const newTest = () => {

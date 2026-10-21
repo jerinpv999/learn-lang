@@ -133,7 +133,7 @@ function freeBlock(d, lang, o, b) {
 
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
-export default function Daily({ lang, speak, stop, onShow, showRom, setShowRom }) {
+export default function Daily({ lang, speak, stop, onShow, onWord, showRom, setShowRom }) {
   const [progress, setProgress] = useState(() => loadProgress(lang));
   const firstOpen = () => { const p = loadProgress(lang); const i = COURSE.findIndex((c) => !p[c.day]?.done); return i < 0 ? 0 : i; };
   const [d, setD] = useState(firstOpen);
@@ -213,7 +213,7 @@ export default function Daily({ lang, speak, stop, onShow, showRom, setShowRom }
     let done = false;
     const fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
     const t = setTimeout(fin, estMs(st) * 3 + 4000); // safety net if the browser never reports the end
-    speak(st.text, st.code, { rate: st.rate, pitch: st.pitch, onEnd: fin });
+    speak(st.text, st.code, { rate: st.rate, pitch: st.pitch, onEnd: fin, onWord: st.code !== EN && st.show?.mode !== 'number' ? onWord : undefined });
   });
   const waitP = (ms) => new Promise((res) => { const t = setTimeout(res, ms); waitRes.current = () => { clearTimeout(t); res(); }; });
 
@@ -323,16 +323,7 @@ export default function Daily({ lang, speak, stop, onShow, showRom, setShowRom }
         {progress[day.day]?.done && !justDone && <p className="hint">You finished this day. You can keep listening for extra practice.</p>}
       </div>
 
-      {cur && (
-        <div className="now" aria-live="polite">
-          <span className="label">{inFree ? 'Free listening' : plan.segs[segIdx]?.title}
-            {cur.mode === 'convo' && ` · ${cur.role} · line ${cur.n}/${cur.total}`}</span>
-          <p className={'now-t' + deva}>{cur.mode === 'number' ? cur.t : cur.t}</p>
-          {cur.mode === 'number' && <p className={'now-w' + deva}>{cur.words}</p>}
-          {lang === 'hi' && showRom && cur.r && <p className="rom">{cur.r}</p>}
-          {cur.mode !== 'number' && <p className="tr">{cur.en}</p>}
-        </div>
-      )}
+      <p className="label">Now: {inFree ? 'Free listening' : plan.segs[segIdx]?.title}</p>
 
       <ol className="segs">
         {plan.segs.map((s, i) => {

@@ -298,6 +298,36 @@ Bill|बिल|bil|L'addition|lah-dee-SYOHN|Die Rechnung|REKH-noong
 Percent|प्रतिशत|pratishat|Pour cent|poor SAHN|Prozent|pro-TSENT
 Loan|क़र्ज़|qarz|Le prêt|preh|Der Kredit|kre-DEET
 Savings|बचत|bachat|L'épargne|lay-PARN-yuh|Die Ersparnisse|er-SHPAR-nis-suh
+#Linking words
+Because|क्योंकि|kyonki|Parce que|pars-KUH|Weil|vile
+Therefore|इसलिए|isliye|Donc|donk|Deshalb|DES-halp
+Even so|फिर भी|phir bhi|Pourtant|poor-TAHN|Trotzdem|TROTS-daym
+Although|हालाँकि|haalaanki|Bien que|byan KUH|Obwohl|op-VOHL
+Whereas|जबकि|jabki|Alors que|ah-LOR kuh|Während|VAIR-ent
+In my opinion|मेरे ख़याल से|mere khayaal se|À mon avis|ah mohn nah-VEE|Meiner Meinung nach|MY-ner MY-noong nakh
+On the one hand|एक तरफ़|ek taraf|D'un côté|duhn koh-TAY|Einerseits|INE-er-zites
+On the other hand|दूसरी तरफ़|doosri taraf|D'un autre côté|duhn OHTR koh-TAY|Andererseits|AN-der-er-zites
+For example|उदाहरण के लिए|udaaharaṇ ke liye|Par exemple|par eg-ZAHMPL|Zum Beispiel|tsoom BY-shpeel
+Actually|असल में|asal mein|En fait|ahn FET|Eigentlich|EYE-gent-likh
+So that|ताकि|taaki|Pour que|poor KUH|Damit|dah-MIT
+Instead of|के बजाय|ke bajaay|Au lieu de|oh LYUH duh|Statt|shtat
+Unfortunately|दुर्भाग्य से|durbhaagya se|Malheureusement|mal-uh-ruhz-MAHN|Leider|LY-der
+Finally|आख़िरकार|aakhirkaar|Finalement|fee-nal-MAHN|Schließlich|SHLEES-likh
+#Society & ideas
+Environment|पर्यावरण|paryaavaraṇ|L'environnement|lahn-vee-ron-MAHN|Die Umwelt|OOM-velt
+Climate|जलवायु|jalvaayu|Le climat|klee-MAH|Das Klima|KLEE-mah
+Society|समाज|samaaj|La société|soh-syay-TAY|Die Gesellschaft|guh-ZEL-shaft
+Government|सरकार|sarkaar|Le gouvernement|goo-vair-nuh-MAHN|Die Regierung|re-GEE-roong
+Future|भविष्य|bhavishya|L'avenir|lahv-NEER|Die Zukunft|TSOO-koonft
+History|इतिहास|itihaas|L'histoire|lees-TWAHR|Die Geschichte|guh-SHIKH-tuh
+Culture|संस्कृति|sanskriti|La culture|kül-TÜR|Die Kultur|kool-TOOR
+Tradition|परंपरा|parampraa|La tradition|trah-dee-SYOHN|Die Tradition|tra-di-TSYOHN
+Opinion|राय|raay|L'opinion|loh-pee-NYOHN|Die Meinung|MY-noong
+Decision|फ़ैसला|faislaa|La décision|day-see-ZYOHN|Die Entscheidung|ent-SHY-doong
+Problem|समस्या|samasyaa|Le problème|proh-BLEM|Das Problem|pro-BLAYM
+Solution|हल|hal|La solution|soh-lü-SYOHN|Die Lösung|LÖ-zoong
+Experience|अनुभव|anubhav|L'expérience|lek-spay-RYAHNS|Die Erfahrung|er-FAH-roong
+Responsibility|ज़िम्मेदारी|zimmedaari|La responsabilité|res-pohn-sah-bee-lee-TAY|Die Verantwortung|fer-ANT-vor-toong
 #Questions
 What?|क्या?|kyaa?|Quoi ?|kwah|Was?|vahs
 Where?|कहाँ?|kahaan?|Où ?|oo|Wo?|voh

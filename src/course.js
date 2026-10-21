@@ -481,7 +481,7 @@ a|Exactly. Congratulations on thirty days!|बिल्कुल। तीस �
 b|Thank you! See you tomorrow, for day thirty-one.|धन्यवाद! कल मिलते हैं, इकतीसवें दिन।|dhanyavaad! kal milte hain, ikteesven din.|Merci ! À demain, pour le jour trente et un.|Danke! Bis morgen, zu Tag einunddreißig.
 `;
 
-function parse(raw) {
+export function parse(raw) {
   const days = [];
   let cur = null;
   for (const line of raw.split('\n')) {
