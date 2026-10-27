@@ -19,6 +19,7 @@
 }
 :root[data-lang="fr"] { --accent: #2F5FD0; --accent-soft: #DCE5FA; }
 :root[data-lang="de"] { --accent: #C23B2E; --accent-soft: #F6DCD8; }
+:root[data-lang="eng"] { --accent: #17806A; --accent-soft: #D3EDE6; }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -28,6 +29,7 @@
   :root:not([data-theme="light"])[data-lang="fr"] { --accent: #6B90F0; --accent-soft: #1F2A47; }
   :root:not([data-theme="light"])[data-lang="de"] { --accent: #E5675A; --accent-soft: #3D2320; }
   :root:not([data-theme="light"])[data-lang="hi"] { --accent: #EE9550; }
+  :root:not([data-theme="light"])[data-lang="eng"] { --accent: #3CC29F; --accent-soft: #173A31; }
 }
 :root[data-theme="dark"] {
   --bg: #111715; --panel: #19211E; --ink: #E6ECE9; --muted: #9AA8A3; --line: #2B3632;
@@ -36,6 +38,7 @@
 :root[data-theme="dark"][data-lang="hi"] { --accent: #EE9550; }
 :root[data-theme="dark"][data-lang="fr"] { --accent: #6B90F0; --accent-soft: #1F2A47; }
 :root[data-theme="dark"][data-lang="de"] { --accent: #E5675A; --accent-soft: #3D2320; }
+:root[data-theme="dark"][data-lang="eng"] { --accent: #3CC29F; --accent-soft: #173A31; }
 
 * { box-sizing: border-box; }
 html, body { background: var(--bg); color: var(--ink); }
@@ -409,4 +412,17 @@ select {
 }
 @media (max-width: 520px) {
   .levels { grid-template-columns: 1fr; }
+}
+
+/* Spoken English: meanings are Hindi, so set them in the Devanagari face */
+:root[data-lang="eng"] :is(.d-en, .tr, .meaning, .opt, .word .en, .ex-q strong, .verdict) { font-family: var(--f-deva), var(--f-body); }
+.alt { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.langs .lang small { white-space: nowrap; }
+.line > button > :not(.spk) { grid-column: 1; }
+@media (max-width: 860px) {
+  .langs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lang { min-width: 0; padding: 7px 10px; }
+}
+@media (max-width: 520px) {
+  .langs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

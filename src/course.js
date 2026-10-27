@@ -495,7 +495,7 @@ export function parse(raw) {
     } else {
       const e = p[1].split(' // ');
       const en = e.length === 1 ? e[0] : e.length === 2 ? { hi: e[0], fr: e[1], de: e[1] } : { hi: e[0], fr: e[1], de: e[2] };
-      cur.lines.push({ who: p[0], en, hi: p[2], hiR: p[3], fr: p[4], de: p[5] });
+      cur.lines.push({ who: p[0], en, hi: p[2], hiR: p[3], fr: p[4], de: p[5], eng: e[0] });
     }
   }
   return days;

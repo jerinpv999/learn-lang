@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { COURSE } from './course.js';
-import { WORDS } from './words.js';
+import { WORDS, meaningOf } from './words.js';
 import { SCENES, LANGS, enFor } from './data.js';
 import { readNumber, formatNum, seeded, pickNumber } from './numbers.js';
 
@@ -36,18 +36,18 @@ function maker(lang, o) {
   const gap = (ms, show) => steps.push({ k: 'gap', ms, show });
   const pitch = (who) => (who === 'a' ? 1.12 : 0.88);
   const shadow = (t) => Math.max(1800, t.length * 85);
-  return { steps, say, gap, pitch, shadow, slow: o.rate * 0.72 };
+  return { steps, say, gap, pitch, shadow, slow: o.rate * 0.72, tr: lang === 'eng' ? 'hi-IN' : EN };
 }
 
 function wordRound(m, items, lang, full) {
   for (const w of items) {
-    const show = { mode: 'word', t: w[lang].t, r: w[lang].r, en: w.en };
+    const show = { mode: 'word', t: w[lang].t, r: w[lang].r, en: meaningOf(w, lang) };
     m.say(w[lang].t, show);
     if (full) {
-      m.gap(800); m.say(w.en, show, { code: EN }); m.gap(600);
+      m.gap(800); m.say(meaningOf(w, lang), show, { code: m.tr }); m.gap(600);
       m.say(w[lang].t, show, { rate: m.slow }); m.gap(m.shadow(w[lang].t) + 600);
     } else {
-      m.gap(2200, show); m.say(w.en, show, { code: EN }); m.gap(700);
+      m.gap(2200, show); m.say(meaningOf(w, lang), show, { code: m.tr }); m.gap(700);
     }
   }
 }
@@ -56,7 +56,7 @@ function convoPass(m, conv, lang, withEn) {
   conv.lines.forEach((l, i) => {
     const s = convoShow(conv, i, lang);
     m.say(l[lang], s, { pitch: m.pitch(l.who) });
-    if (withEn) { m.gap(450); m.say(enFor(l, lang), s, { code: EN }); }
+    if (withEn) { m.gap(450); m.say(enFor(l, lang), s, { code: m.tr }); }
     m.gap(650);
   });
   m.gap(1800);
@@ -83,10 +83,11 @@ export function buildSegments(d, lang, o) {
     for (let i = 0; i < 24; i++) {
       const n = pickNumber(r, i % 4 === 0 ? Math.max(100, max / 100) : max);
       const rd = readNumber(n, lang);
-      const show = { mode: 'number', t: formatNum(n, lang), words: rd.text, r: rd.r, en: formatNum(n, 'en') };
+      const eng = lang === 'eng';
+      const show = { mode: 'number', t: formatNum(n, lang), words: rd.text, r: rd.r, en: eng ? `${formatNum(n, 'hi')} (Indian grouping)` : formatNum(n, 'en') };
       m.gap(2200, show); m.say(rd.text, show); m.gap(1000);
       m.say(rd.text, show, { rate: m.slow }); m.gap(600);
-      m.say(formatNum(n, 'en'), show, { code: EN }); m.gap(900);
+      m.say(eng ? readNumber(n, 'hi').text : formatNum(n, 'en'), show, { code: m.tr }); m.gap(900);
     }
   });
 
@@ -97,7 +98,7 @@ export function buildSegments(d, lang, o) {
       const s = convoShow(day, i, lang);
       m.say(l[lang], s, { pitch: m.pitch(l.who) }); m.gap(m.shadow(l[lang]), s);
       m.say(l[lang], s, { pitch: m.pitch(l.who), rate: m.slow }); m.gap(m.shadow(l[lang]), s);
-      if (o.english) m.say(enFor(l, lang), s, { code: EN });
+      if (o.english) m.say(enFor(l, lang), s, { code: m.tr });
       m.gap(700);
     });
   });
@@ -213,7 +214,7 @@ export default function Daily({ lang, speak, stop, onShow, onWord, showRom, setS
     let done = false;
     const fin = () => { if (!done) { done = true; clearTimeout(t); res(); } };
     const t = setTimeout(fin, estMs(st) * 3 + 4000); // safety net if the browser never reports the end
-    speak(st.text, st.code, { rate: st.rate, pitch: st.pitch, onEnd: fin, onWord: st.code !== EN && st.show?.mode !== 'number' ? onWord : undefined });
+    speak(st.text, st.code, { rate: st.rate, pitch: st.pitch, onEnd: fin, onWord: st.code === LANGS[lang].speech && st.show?.mode !== 'number' ? onWord : undefined });
   });
   const waitP = (ms) => new Promise((res) => { const t = setTimeout(res, ms); waitRes.current = () => { clearTimeout(t); res(); }; });
 
@@ -315,7 +316,7 @@ export default function Daily({ lang, speak, stop, onShow, onWord, showRom, setS
           <button className="ghost" onClick={() => jump(0)}>Restart day</button>
         </div>
         <div className="row wrap">
-          <label className="toggle"><input id="d-en" type="checkbox" checked={english} onChange={(e) => setEnglish(e.target.checked)} /> English after each line</label>
+          <label className="toggle"><input id="d-en" type="checkbox" checked={english} onChange={(e) => setEnglish(e.target.checked)} /> {lang === 'eng' ? 'Hindi meaning after each line' : 'English after each line'}</label>
           <label className="toggle"><input id="d-slow" type="checkbox" checked={slow} onChange={(e) => setSlow(e.target.checked)} /> Slower voice</label>
           {lang === 'hi' && <label className="toggle"><input id="d-rom" type="checkbox" checked={showRom} onChange={(e) => setShowRom(e.target.checked)} /> Romanised</label>}
         </div>

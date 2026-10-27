@@ -4,6 +4,7 @@ export const LANGS = {
   hi: { name: 'Hindi', native: 'हिन्दी', speech: 'hi-IN', greet: 'नमस्ते' },
   fr: { name: 'French', native: 'Français', speech: 'fr-FR', greet: 'Bonjour' },
   de: { name: 'German', native: 'Deutsch', speech: 'de-DE', greet: 'Hallo' },
+  eng: { name: 'Spoken English', native: 'English', speech: 'en-IN', greet: 'Hello', support: 'hi' },
 };
 
 // [character, name/romanization, tip]
@@ -81,10 +82,43 @@ export const LETTERS = {
       ],
     },
   ],
+  eng: [
+    {
+      group: 'The alphabet',
+      items: [
+        ['A', 'ay', 'apple (short a) or name (long a)'], ['B', 'bee', 'bag, book'], ['C', 'see', 'cat (k) or city (s)'],
+        ['D', 'dee', 'day, dinner'], ['E', 'ee', 'egg (short e) or me (long e)'], ['F', 'ef', 'fish, phone (ph = f)'],
+        ['G', 'jee', 'go (hard) or giraffe (soft)'], ['H', 'aych', 'hat, house; silent in hour, honest'], ['I', 'eye', 'sit (short i) or time (long i)'],
+        ['J', 'jay', 'jam, job'], ['K', 'kay', 'kite; silent in know, knife'], ['L', 'el', 'leg, love'],
+        ['M', 'em', 'man, money'], ['N', 'en', 'name, nine'], ['O', 'oh', 'hot (short o) or go (long o)'],
+        ['P', 'pee', 'pen, paper'], ['Q', 'kyoo', 'queen (qu = kw)'], ['R', 'ar', 'red, rice; often silent after a vowel in British English: car, water'],
+        ['S', 'es', 'sun, bus'], ['T', 'tee', 'tea, ten'], ['U', 'yoo', 'cup (short u) or use (long u)'],
+        ['V', 'vee', 'van, very: top teeth on lower lip'], ['W', 'double-yoo', 'water, we: round lips, no teeth'], ['X', 'eks', 'box, six'],
+        ['Y', 'wye', 'yes, yellow; happy (ee sound)'], ['Z', 'zed (UK) / zee (US)', 'zoo, zero: a buzzing s, not j'],
+      ],
+    },
+    {
+      group: 'Sounds Hindi speakers find tricky',
+      items: [
+        ['v', 'v as in very', 'Top teeth touch the lower lip: very, voice, seven. Do not say “wery”.', 'very, voice, seven'],
+        ['w', 'w as in water', 'Round your lips, no teeth: water, window, we. Do not say “vater”.', 'water, window, we'],
+        ['th', 'soft th', 'Tongue between the teeth, no voice: think, three, thank you. Not “t”.', 'think, three, thank you'],
+        ['th̬', 'hard th', 'Same tongue, with voice: this, that, mother. Not “d”.', 'this, that, mother'],
+        ['z', 'z as in zero', 'A buzzing s: zero, easy, is. Not “j”: zero, not “jero”.', 'zero, easy, is'],
+        ['s+', 's at the start', 'Do not add a vowel before s: school, station, speak. Not “ischool”.', 'school, station, speak'],
+        ['æ', 'short a', 'Open your mouth wide: cat, bag, man, have.', 'cat, bag, man'],
+        ['ɪ / iː', 'ship or sheep', 'Short i in ship, sit, live. Long ee in sheep, seat, leave.', 'ship, sheep, sit, seat'],
+        ['ʊ / uː', 'full or fool', 'Short u in book, good, full. Long oo in food, moon, fool.', 'full, fool, book, food'],
+        ['ə', 'schwa', 'The weak “uh” in about, banana, teacher. Most unstressed syllables use it.', 'about, banana, teacher'],
+        ['-ed', 'past endings', 'walked = walkt, played = playd, wanted = wantid.', 'walked, played, wanted'],
+        ['ˈ', 'word stress', 'Stress one syllable strongly: PHO-to-graph, pho-TO-gra-pher, de-VE-lop.', 'photograph, photographer, develop'],
+      ],
+    },
+  ],
 };
 
 // Conversations. Each line: who ('a' | 'b'), en (string or per-language object), hi, hiR, fr, de.
-const L = (who, en, hi, hiR, fr, de) => ({ who, en, hi, hiR, fr, de });
+const L = (who, en, hi, hiR, fr, de) => ({ who, en, hi, hiR, fr, de, eng: typeof en === 'string' ? en : en.hi });
 
 export const SCENES = [
   {
@@ -183,4 +217,5 @@ export const SCENES = [
   },
 ];
 
-export const enFor = (line, lang) => (typeof line.en === 'string' ? line.en : line.en[lang]);
+// The meaning shown under a line: English for Hindi/French/German learners, Hindi for English learners.
+export const enFor = (line, lang) => (lang === 'eng' ? line.hi : typeof line.en === 'string' ? line.en : line.en[lang]);

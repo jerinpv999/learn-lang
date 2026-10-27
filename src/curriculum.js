@@ -277,6 +277,83 @@ export const LEVELS = [
   },
 ];
 
+// Spoken English grammar, written for Hindi speakers. Each unit ends with a common mistake to avoid.
+const ENG = {
+  u1: { title: 'I am, you are, he is', points: [
+    'to be: I am, you are, he/she is, we are, they are (मैं हूँ, आप हैं, वह है, हम हैं, वे हैं).',
+    'Use a or an before a job: I am a teacher. She is an engineer. Hindi does not need it; English does.',
+    'In speech, join words: I’m, you’re, he’s, it’s, I’m not, isn’t, aren’t.',
+    'Common mistake: “What is your good name?” Say “What’s your name?” or “May I know your name?”',
+  ] },
+  u2: { title: 'Asking questions', points: [
+    'Question word + do/does + verb: Where does the bus stop? (not “Where the bus stops?”)',
+    'Yes/no questions start with do, does, is, are or can: Does this bus go to the hospital? Is the train late?',
+    'Time: seven fifteen or quarter past seven; eight forty-five or quarter to nine; half past three.',
+    'Common mistake: “You are coming, no?” Say “You’re coming, aren’t you?” or simply “Are you coming?”',
+  ] },
+  u3: { title: 'Asking politely', points: [
+    'I’d like … is softer than I want …: I’d like some water. Could I have the menu, please?',
+    'English uses please and thank you far more than Hindi. Say them every time, even to waiters and drivers.',
+    'some in positive sentences, any in questions and negatives: some bread, any milk?, no rice.',
+    'Common mistake: “Give me one tea.” Say “Could I have a tea, please?”',
+  ] },
+  u4: { title: 'Present simple and present continuous', points: [
+    'Habits: I work, she works (add -s for he, she, it). Right now: I am working, she is working.',
+    'Verbs of knowing and having do not take -ing: I know, I understand, I have a car.',
+    'on + day (on Monday), at + time (at nine), in + month or year (in May, in 2025).',
+    'Common mistake: “I am having a doubt.” Say “I have a question.” And “He is knowing” → “He knows.”',
+  ] },
+  u5: { title: 'Future, can and must', points: [
+    'will for decisions and promises: I’ll send it now. going to for plans: We’re going to the hills on Saturday.',
+    'can / can’t for ability and permission: Can I pay by card? I can’t come tomorrow.',
+    'have to / must for rules, should for advice: You have to buy a ticket. You should rest.',
+    'Common mistake: “Prepone the meeting.” Most English speakers say “bring the meeting forward”.',
+  ] },
+  u6: { title: 'Talking about the past', points: [
+    'Past simple for finished actions: I studied, I met her, she wore a red sari. Many verbs are irregular: go–went, see–saw, buy–bought.',
+    'used to for old habits: We used to walk four kilometres to school.',
+    'Present perfect links the past to now: I have worked here for six years. Have you finished the book?',
+    'Common mistake: “I am working here since 2018.” Say “I have been working here since 2018.” Use for with a period: for six years.',
+  ] },
+  u7: { title: 'Comparing and big numbers', points: [
+    'Short adjectives: cheap – cheaper – the cheapest. Long ones: more expensive, the most beautiful.',
+    'International numbers: 4,500,000 = four and a half million. In India: 45,00,000 = forty-five lakh. Learn both.',
+    'Say “and” after hundred: two hundred and fifty rupees. Decimals use point: three point five percent.',
+    'Common mistake: “more better” → “better”; “too much good” → “very good” (too means more than you want).',
+  ] },
+  u8: { title: 'Polite requests and conditions', points: [
+    'Could you …? Would you mind …? I was wondering if … make requests softer.',
+    'If + present, will + verb: If Neha helps us, we’ll finish in five days.',
+    'Saying no politely: I’m afraid that’s not possible. Unfortunately, the budget is tight this year.',
+    'Common mistake: “Kindly do the needful.” Say exactly what you need: “Could you send the report today?”',
+  ] },
+  u9: { title: 'Advice and imagining', points: [
+    'If I were you, I would … : If I were you, I’d write down the pros and cons.',
+    'Advice: You should …, Why don’t you …?, It might be a good idea to …',
+    'Feelings: I feel much better. I’m worried about … I’m proud of …',
+    'Common mistake: “I am feeling bore.” Say “I’m bored” (how you feel) and “It’s boring” (the thing).',
+  ] },
+  u10: { title: 'Linking ideas and giving opinions', points: [
+    'Opinions: In my opinion …, I think …, On the one hand … on the other hand …',
+    'although, even so, therefore, so that, whereas join ideas: Although I’ll miss you, it’s a good idea.',
+    'Passive for news: The hottest day was recorded yesterday. More trees will be planted.',
+    'Common mistake: “Although it is hot, but I cycle.” Use only one: “Although it’s hot, I cycle.”',
+  ] },
+  u11: { title: 'Feelings, health and relationships', points: [
+    'want / would like someone to do something: I’d like you to walk every day.',
+    'should have / could have / would have for the past: She would have done anything for us.',
+    'Phrasal verbs are everywhere in speech: take on, let go, cut down, look after, find out.',
+    'Common mistake: “I have fever since two days.” Say “I’ve had a fever for two days.” And “discuss about” → “discuss”.',
+  ] },
+  u12: { title: 'Formal and public speaking', points: [
+    'Openings: Good evening, everyone. Dear colleagues, thank you all for coming.',
+    'Passive for history: It was built in the fourteenth century. It was turned into a museum.',
+    'Emphasis: What I’m most proud of is not the growth, but the people.',
+    'A toast: Please raise your glasses: to the team! Speak slowly and pause after each idea.',
+  ] },
+};
+for (const lv of LEVELS) for (const u of lv.units) u.grammar.eng = ENG[u.id];
+
 export const ALL_LESSON_IDS = LEVELS.flatMap((l) => l.units.flatMap((u) => u.lessons));
 export function findLesson(id) {
   for (const lv of LEVELS) for (const u of lv.units) {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { LANGS, LETTERS } from './data.js';
-import { WORDS } from './words.js';
+import { WORDS, meaningOf } from './words.js';
 import Numbers from './Numbers.jsx';
 import Daily, { loadProgress } from './Daily.jsx';
 import Course, { loadCourse } from './Course.jsx';
@@ -76,8 +76,8 @@ function Letters({ lang, onPick, current }) {
         <section key={g.group}>
           <h3 className="label">{g.group}</h3>
           <div className="letters">
-            {g.items.map(([ch, name, tip]) => (
-              <button key={ch} className={'letter' + (current?.char === ch ? ' on' : '')} onClick={() => onPick({ char: ch, name, tip })}>
+            {g.items.map(([ch, name, tip, sayIt]) => (
+              <button key={ch + name} className={'letter' + (current?.char === ch && current?.name === name ? ' on' : '')} onClick={() => onPick({ char: ch, name, tip, say: sayIt })}>
                 <span className={'glyph' + (lang === 'hi' ? ' deva' : '')}>{ch}</span>
                 <span className="lname">{name}</span>
               </button>
@@ -120,12 +120,12 @@ function Quiz({ lang, say, onClose }) {
       <div className="quiz-opts">
         {round.opts.map((o) => {
           const state = picked ? (o === round.q ? 'right' : o === picked ? 'wrong' : '') : '';
-          return <button key={o.en} className={'opt ' + state} onClick={() => choose(o)}>{o.en}</button>;
+          return <button key={o.en} className={'opt ' + state} onClick={() => choose(o)}>{meaningOf(o, lang)}</button>;
         })}
       </div>
       {picked && (
         <div className="quiz-foot">
-          <span>{picked === round.q ? 'Correct.' : `It means “${round.q.en}”.`} Say it: <em>{round.q[lang].r}</em></span>
+          <span>{picked === round.q ? 'Correct.' : `It means “${meaningOf(round.q, lang)}”.`}{round.q[lang].r && <> Say it: <em>{round.q[lang].r}</em></>}</span>
           <button className="primary" onClick={() => { setRound(make()); setPicked(null); }}>Next word</button>
         </div>
       )}
@@ -151,7 +151,7 @@ function Words({ lang, say, onPick, current }) {
         {WORDS[cat].items.map((w) => (
           <li key={w.en}>
             <button className={'word' + (current === w.en ? ' on' : '')} onClick={() => onPick(w)}>
-              <span className="en">{w.en}</span>
+              <span className="en">{meaningOf(w, lang)}</span>
               <span className={'tgt' + (lang === 'hi' ? ' deva' : '')}>{w[lang].t}</span>
               <span className="pr">{w[lang].r}</span>
               <span className="spk"><SpeakIcon /></span>
@@ -239,7 +239,7 @@ export default function App() {
       setFocus({ kind: 'letter', t: it[0], en: it[1], tip: it[2], label: 'Letter · sounds like' });
     } else if (tab === 'words') {
       const w = WORDS[0].items[0];
-      setFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: w.en, label: WORDS[0].cat });
+      setFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: meaningOf(w, lang), label: WORDS[0].cat });
     }
   }, [tab, lang, setFocus]);
 
@@ -253,7 +253,7 @@ export default function App() {
           <span className="mark" aria-hidden="true">{LANGS[lang].greet.slice(0, 1)}</span>
           <div>
             <h1>Phrasewalk</h1>
-            <p>Hindi, French and German from English · beginner to advanced</p>
+            <p>Hindi, French and German from English · Spoken English for Hindi speakers</p>
           </div>
         </div>
         <div className="langs" role="radiogroup" aria-label="Language to learn">
@@ -291,8 +291,8 @@ export default function App() {
 
         <div className="panel">
           {tab === 'course' && <Course lang={lang} sayFocus={sayFocus} wordByWord={wordByWord} setFocus={setFocus} stop={halt} showRom={showRom} setShowRom={setShowRom} />}
-          {tab === 'letters' && <Letters lang={lang} current={letter} onPick={(l) => { setLetter(l); sayFocus({ kind: 'letter', t: l.char, en: l.name, tip: l.tip, label: 'Letter · sounds like' }); }} />}
-          {tab === 'words' && <Words lang={lang} say={say} current={word} onPick={(w) => { setWord(w.en); sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: w.en, label: 'Word' }); }} />}
+          {tab === 'letters' && <Letters lang={lang} current={letter} onPick={(l) => { setLetter(l); sayFocus({ kind: 'letter', t: l.char, say: l.say || l.char, en: l.name, tip: l.say ? `${l.tip} Listen: ${l.say}.` : l.tip, label: 'Letter · sounds like' }); }} />}
+          {tab === 'words' && <Words lang={lang} say={say} current={word} onPick={(w) => { setWord(w.en); sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: meaningOf(w, lang), label: 'Word' }); }} />}
           {tab === 'numbers' && <Numbers lang={lang} say={(t, o = {}) => say(t, o)} onShow={onNumShow} />}
           {tab === 'daily' && <Daily key={lang} lang={lang} speak={speak} stop={stop} onShow={onDailyShow} onWord={onDailyWord} showRom={showRom} setShowRom={setShowRom} />}
         </div>

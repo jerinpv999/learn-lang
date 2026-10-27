@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LEVELS, LESSONS, findLesson, ALL_LESSON_IDS } from './curriculum.js';
-import { WORDS } from './words.js';
+import { WORDS, meaningOf } from './words.js';
 import { enFor } from './data.js';
 import { splitWords } from './Display.jsx';
 
@@ -200,7 +200,7 @@ function Lesson({ id, lang, progress, sayFocus, wordByWord, setFocus, stop, show
     if (STEPS[step][0] === 'study') { setFocus(lineFocus(lesson, studyI, lang)); }
     else if (STEPS[step][0] === 'grammar') setFocus({ kind: 'word', t: unit.title, en: g.title, label: `${level.name} · Unit ${unit.id.slice(1)}` });
     else if (STEPS[step][0] === 'listen' || STEPS[step][0] === 'practice') setFocus(lineFocus(lesson, 0, lang));
-    else if (words[0]) setFocus({ kind: 'word', t: words[0][lang].t, r: words[0][lang].r, en: words[0].en, label: lesson.words });
+    else if (words[0]) setFocus({ kind: 'word', t: words[0][lang].t, r: words[0][lang].r, en: meaningOf(words[0], lang), label: lesson.words });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, studyI, lang]);
 
@@ -220,7 +220,7 @@ function Lesson({ id, lang, progress, sayFocus, wordByWord, setFocus, stop, show
     if (playing) { halt(); return; }
     const my = ++run.current; setPlaying(true);
     for (const w of words) {
-      await sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: w.en, label: lesson.words });
+      await sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: meaningOf(w, lang), label: lesson.words });
       if (run.current !== my) return;
       await new Promise((r) => setTimeout(r, 1400));
       if (run.current !== my) return;
@@ -260,8 +260,8 @@ function Lesson({ id, lang, progress, sayFocus, wordByWord, setFocus, stop, show
           <ul className="words">
             {words.map((w) => (
               <li key={w.en}>
-                <button className="word" onClick={() => { halt(); sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: w.en, label: lesson.words }); }}>
-                  <span className="en">{w.en}</span>
+                <button className="word" onClick={() => { halt(); sayFocus({ kind: 'word', t: w[lang].t, r: w[lang].r, en: meaningOf(w, lang), label: lesson.words }); }}>
+                  <span className="en">{meaningOf(w, lang)}</span>
                   <span className={'tgt' + deva}>{w[lang].t}</span>
                   <span className="pr">{w[lang].r}</span>
                 </button>
@@ -277,7 +277,7 @@ function Lesson({ id, lang, progress, sayFocus, wordByWord, setFocus, stop, show
           <div className="row between wrap">
             <div className="roles"><span className="dot a" />{lesson.roles[0]}<span className="dot b" />{lesson.roles[1]}</div>
             <div className="row wrap">
-              <label className="toggle"><input id="l-en" type="checkbox" checked={showEn} onChange={(e) => setShowEn(e.target.checked)} /> English</label>
+              <label className="toggle"><input id="l-en" type="checkbox" checked={showEn} onChange={(e) => setShowEn(e.target.checked)} /> {lang === 'eng' ? 'Hindi meaning' : 'English'}</label>
               {lang === 'hi' && <label className="toggle"><input id="l-rom" type="checkbox" checked={showRom} onChange={(e) => setShowRom(e.target.checked)} /> Romanised</label>}
               <button className="primary" onClick={playAll}>{playing ? 'Stop' : 'Play conversation'}</button>
             </div>
@@ -294,7 +294,7 @@ function Lesson({ id, lang, progress, sayFocus, wordByWord, setFocus, stop, show
               </li>
             ))}
           </ol>
-          <p className="hint">First listen with English, then switch English off and listen again.</p>
+          <p className="hint">{lang === 'eng' ? 'First listen with the Hindi meaning, then switch it off and listen again. Repeat each line aloud.' : 'First listen with English, then switch English off and listen again.'}</p>
           <button className="primary" onClick={() => setStep(3)}>Next: line by line →</button>
         </section>
       )}
@@ -340,7 +340,7 @@ export default function Course({ lang, sayFocus, wordByWord, setFocus, stop, sho
   useEffect(() => setProgress(loadCourse(lang)), [lang]);
   useEffect(() => store.set('ll.lesson', open), [open]);
   useEffect(() => {
-    if (!open) setFocus({ kind: 'word', t: { hi: 'नमस्ते', fr: 'Bonjour', de: 'Hallo' }[lang], en: 'Choose a lesson to begin', label: 'Course' });
+    if (!open) setFocus({ kind: 'word', t: { hi: 'नमस्ते', fr: 'Bonjour', de: 'Hallo', eng: 'Hello' }[lang], en: lang === 'eng' ? 'एक पाठ चुनिए और शुरू कीजिए · Choose a lesson to begin' : 'Choose a lesson to begin', label: 'Course' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, lang]);
 

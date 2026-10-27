@@ -28,9 +28,19 @@ const RULES = {
   ],
 };
 
+RULES.eng = [
+  ['Commas every three digits', 'International English groups by thousands: 4,500,000 is four and a half million. The same amount in India is written 45,00,000 and said “forty-five lakh”.'],
+  ['Big units', 'thousand = 1,000 · million = 1,000,000 (10 lakh) · billion = 1,000,000,000 (100 crore). 1 lakh = 100 thousand, 1 crore = 10 million.'],
+  ['Say “and” after hundred', 'In British and Indian English: two hundred and fifty, one thousand and five. Americans often leave it out.'],
+  ['No -s on hundred, thousand, million', 'two hundred, five thousand, three million. Only with “of”: hundreds of people, millions of rupees.'],
+  ['Prices and decimals', '₹2,499 = two thousand four hundred and ninety-nine rupees. 3.5% = three point five percent: decimals use a point.'],
+  ['Years', 'Say years in pairs: 1994 = nineteen ninety-four, 1905 = nineteen oh five, 2024 = twenty twenty-four. 2005 = two thousand and five.'],
+];
+
 const LEVELS = {
   hi: [[1000, 'Up to 1,000'], [100000, 'Up to 1 lakh'], [10000000, 'Up to 1 crore'], [1000000000, 'Up to 1 arab']],
   fr: [[1000, 'Up to 1 000'], [100000, 'Up to 100 000'], [10000000, 'Up to 10 millions'], [1000000000, 'Up to 1 milliard']],
+  eng: [[1000, 'Up to 1,000'], [100000, 'Up to 100,000'], [10000000, 'Up to 10 million'], [1000000000, 'Up to 1 billion']],
   de: [[1000, 'Up to 1.000'], [100000, 'Up to 100.000'], [10000000, 'Up to 10 Millionen'], [1000000000, 'Up to 1 Milliarde']],
 };
 
@@ -97,6 +107,7 @@ export default function Numbers({ lang, say, onShow }) {
             <div className="numbig">{formatNum(n, lang)}</div>
             <p className={'numwords' + deva}>{rd.text}</p>
             {lang === 'hi' && <p className="rom">{rd.r}</p>}
+            {rd.alt && <p className="alt">Indian English: <strong>{rd.alt}</strong> <button className="chip" onClick={() => say(rd.alt)}>Hear it</button></p>}
             <div className="row wrap">
               <button className="primary" onClick={() => say(rd.text)}><SpeakIcon /> Hear it</button>
               <button className="chip" onClick={() => say(rd.text, { rate: 0.6 })}>Slowly</button>
@@ -123,7 +134,7 @@ export default function Numbers({ lang, say, onShow }) {
         <h3 className="label">Place values</h3>
         <div className="tablewrap">
           <table className="ladder">
-            <thead><tr><th>Digits</th><th>Say it</th><th>English</th></tr></thead>
+            <thead><tr><th>Digits</th><th>Say it</th><th>{lang === 'eng' ? 'In India' : 'English'}</th></tr></thead>
             <tbody>
               {LADDER.map((row) => {
                 const w = readNumber(row.n, lang);
@@ -132,7 +143,7 @@ export default function Numbers({ lang, say, onShow }) {
                     onKeyDown={(e) => { if (e.key === 'Enter') { setRaw(String(row.n)); say(w.text); } }}>
                     <td className="num">{formatNum(row.n, lang)}</td>
                     <td className={deva.trim()}>{w.text}{lang === 'hi' && <small className="rom"> {w.r}</small>}</td>
-                    <td className="muted">{row.en}</td>
+                    <td className="muted">{lang === 'eng' ? (w.alt || row.en) : row.en}</td>
                   </tr>
                 );
               })}

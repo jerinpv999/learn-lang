@@ -349,5 +349,8 @@ for (const line of RAW.split('\n')) {
   if (!s) continue;
   if (s.startsWith('#')) { WORDS.push({ cat: s.slice(1), items: [] }); continue; }
   const [en, hi, hiR, fr, frR, de, deR] = s.split('|');
-  WORDS[WORDS.length - 1].items.push({ en, hi: { t: hi, r: hiR }, fr: { t: fr, r: frR }, de: { t: de, r: deR } });
+  WORDS[WORDS.length - 1].items.push({ en, hi: { t: hi, r: hiR }, fr: { t: fr, r: frR }, de: { t: de, r: deR }, eng: { t: en, r: '' } });
 }
+
+/** What a word means to the learner: English for Hindi/French/German, Hindi for spoken English. */
+export const meaningOf = (w, lang) => (lang === 'eng' ? w.hi.t : w.en);

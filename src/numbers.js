@@ -88,11 +88,49 @@ function german(n, year) {
   return { parts, tightFrom };
 }
 
+/* ---------- English (British/Indian style, with “and”) ---------- */
+const EU = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const ET = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+function en99(n) { if (n < 20) return EU[n]; const t = Math.floor(n / 10), u = n % 10; return ET[t] + (u ? '-' + EU[u] : ''); }
+function en999(n) {
+  const h = Math.floor(n / 100), r = n % 100;
+  if (!h) return en99(r);
+  return `${EU[h]} hundred` + (r ? ` and ${en99(r)}` : '');
+}
+function english(n, year) {
+  if (n === 0) return { parts: [{ value: 0, t: 'zero' }] };
+  if (year && ((n >= 1100 && n <= 1999) || (n >= 2010 && n <= 2099))) {
+    const h = Math.floor(n / 100), r = n % 100;
+    return { parts: [{ value: n, t: en99(h) + (r === 0 ? ' hundred' : r < 10 ? ` oh ${EU[r]}` : ` ${en99(r)}`) }] };
+  }
+  const parts = [];
+  const units = [[1e9, 'billion'], [1e6, 'million'], [1e3, 'thousand']];
+  let rem = n;
+  for (const [v, w] of units) { const q = Math.floor(rem / v); if (q) { parts.push({ value: q * v, t: `${en999(q)} ${w}` }); rem %= v; } }
+  if (rem) parts.push({ value: rem, t: (parts.length && rem < 100 ? 'and ' : '') + en999(rem) });
+  return { parts };
+}
+/** Indian English: crore and lakh with English number words. */
+function indianEnglish(n) {
+  if (n === 0) return 'zero';
+  const out = []; let rem = n;
+  for (const [v, w] of [[1e7, 'crore'], [1e5, 'lakh'], [1e3, 'thousand']]) {
+    const q = Math.floor(rem / v);
+    if (q) { out.push(`${q >= 1000 ? indianEnglish(q) : en999(q)} ${w}`); rem %= v; }
+  }
+  if (rem) out.push((out.length && rem < 100 ? 'and ' : '') + en999(rem));
+  return out.join(' ');
+}
+
 /** Read a whole number aloud. Returns { text, r (Hindi romanised), parts }. */
 export function readNumber(n, lang, { year = false } = {}) {
   if (lang === 'hi') {
     const { parts } = hindi(n, year);
     return { text: parts.map((p) => p.t).join(' '), r: parts.map((p) => p.r).join(' '), parts };
+  }
+  if (lang === 'eng') {
+    const { parts } = english(n, year);
+    return { text: parts.map((p) => p.t).join(' '), r: '', parts, alt: n >= 100000 && !year ? indianEnglish(n) : '' };
   }
   if (lang === 'fr') {
     const { parts } = french(n);
@@ -106,7 +144,7 @@ export function readNumber(n, lang, { year = false } = {}) {
 
 /** Digits grouped the local way: 12,34,567 · 1 234 567 · 1.234.567 */
 export function formatNum(n, lang) {
-  const loc = { hi: 'en-IN', fr: 'fr-FR', de: 'de-DE', en: 'en-US' }[lang] || 'en-US';
+  const loc = { hi: 'en-IN', fr: 'fr-FR', de: 'de-DE', en: 'en-US', eng: 'en-US' }[lang] || 'en-US';
   try { return n.toLocaleString(loc).replace(/ | /g, ' '); } catch { return String(n); }
 }
 
